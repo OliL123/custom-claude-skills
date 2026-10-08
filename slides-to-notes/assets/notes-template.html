@@ -1,0 +1,392 @@
+<title>EECS 280 · Polymorphism</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one iPad notes page. Wide screens get a left margin column for MISC DETAILS, like the handwritten pages. */
+/* COURSE COLOR: swap --ink / --ink2 / --hl per course.
+   EECS (blue):  #2f45b5 / #6a3fb0 / rgba(112,124,214,.33)   dark: #93a5ff / #c6a9ff / rgba(120,135,255,.30)
+   CS HL (green): #2a8a52 / #6a5fc0 / rgba(126,118,214,.33)  dark: #6fd69b / #b3a9ff / rgba(126,118,214,.32)
+   Japanese (red): #a8322a / #a8322a / rgba(214,120,120,.30) dark: #ff8f84 / #ff8f84 / rgba(255,120,120,.25) */
+:root {
+  --paper: #fdfdfb;
+  --text: #1c1e26;
+  --muted: #5c6172;
+  --rule: #e2e4ed;
+  --code-bg: #f3f4fa;
+  --ink: #2f45b5;
+  --ink2: #6a3fb0;
+  --hl: rgba(112,124,214,.33);
+  --good: #1d7a4b;
+  --bad: #b3261e;
+  --idea-bg: #f5f6fc;
+  --head: "Barlow Condensed", "Arial Narrow", "Segoe UI", sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #15171e; --text: #e6e7ee; --muted: #9ba1b5; --rule: #2a2e3b; --code-bg: #1d2029;
+    --ink: #93a5ff; --ink2: #c6a9ff; --hl: rgba(120,135,255,.30); --good: #63d69e; --bad: #ff8a80;
+    --idea-bg: #1b1e28; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #15171e; --text: #e6e7ee; --muted: #9ba1b5; --rule: #2a2e3b; --code-bg: #1d2029;
+  --ink: #93a5ff; --ink2: #c6a9ff; --hl: rgba(120,135,255,.30); --good: #63d69e; --bad: #ff8a80;
+  --idea-bg: #1b1e28; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--text); font: 17px/1.55 var(--body); padding: 28px 16px 64px; }
+.page { max-width: 960px; margin: 0 auto; display: grid; gap: 28px; }
+
+/* header */
+.course { font: 700 2.4rem/1 var(--head); color: var(--ink); letter-spacing: .01em; text-transform: uppercase; }
+.course small { display: block; font: 400 1rem var(--body); text-transform: none; margin-top: 6px; }
+h1 { font: 700 2rem/1.1 var(--head); letter-spacing: .01em; text-transform: uppercase; margin: 0; text-wrap: balance; }
+h1 .n { color: var(--ink); }
+
+/* the big idea: for reading, not copying */
+.idea { background: var(--idea-bg); border-radius: 10px; padding: 16px 20px; max-width: 70ch; }
+.idea .tag { font: 700 .75rem var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.idea p { margin: 6px 0 0; }
+
+/* notes sheet */
+.sheet { display: grid; grid-template-columns: 1fr; gap: 26px; }
+@media (min-width: 900px) {
+  .sheet { grid-template-columns: 210px 1fr; column-gap: 36px; }
+  .sheet > .sec { grid-column: 2; }
+  .sheet > .misc { grid-column: 1; grid-row: 1 / span 20; align-self: end; }
+}
+.sec { display: grid; gap: 10px; min-width: 0; }
+h2 { font: 700 1.3rem/1.2 var(--head); text-transform: uppercase; letter-spacing: .04em; color: var(--ink);
+     margin: 0; justify-self: start; padding: 1px 10px; border-radius: 9px 14px 10px 12px; background: var(--hl); }
+.term { color: var(--ink); font-weight: 700; }
+.def { margin: 0; max-width: 68ch; }
+.arrows { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.arrows li { padding-left: 1.6em; position: relative; max-width: 66ch; }
+.arrows li::before { content: "↳"; position: absolute; left: .2em; color: var(--ink); font-weight: 700; }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px 28px; align-items: start; }
+.pair > * { min-width: 0; }
+
+/* annotated code: each row is code + a handwritten label */
+.code { background: var(--code-bg); border-radius: 8px; padding: 10px 14px; overflow-x: auto; display: grid; gap: 2px; }
+.ln { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 14px; }
+.ln code { font: 400 .92rem/1.6 var(--mono); white-space: pre; }
+.ln .note { font: italic 400 .95rem/1.35 var(--body); color: var(--ink); }
+.kw { color: var(--ink2); font-weight: 600; }
+.cm { color: var(--muted); }
+.ok { color: var(--good); font-weight: 700; }
+.no { color: var(--bad); font-weight: 700; }
+
+/* comparison table */
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; font-size: .97rem; }
+th, td { text-align: left; padding: 6px 16px 6px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 700 1rem var(--head); color: var(--ink); text-transform: uppercase; letter-spacing: .03em; }
+td:first-child { color: var(--muted); }
+
+/* misc sidebar */
+.misc { display: grid; gap: 8px; min-width: 0; }
+.misc h2 { background: none; padding: 0; }
+.misc ol { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; font-size: .95rem; }
+.misc ol li::marker { color: var(--ink); font-weight: 700; }
+
+/* check yourself: the question (with its code) is always visible, only the answer is hidden */
+.check { display: grid; gap: 14px; border-top: 2px dashed var(--rule); padding-top: 22px; }
+.check-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+.check-head h2 { background: none; padding: 0; color: var(--text); }
+.check-head p { margin: 0; flex-basis: 100%; color: var(--muted); font-size: .95rem; }
+button { font: 700 .9rem var(--body); color: var(--ink); background: transparent; border: 1.5px solid var(--ink);
+         border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+button:focus-visible, summary:focus-visible { outline: 3px solid var(--hl); outline-offset: 2px; }
+.ex { border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.ex .q { margin: 0; font-weight: 700; }
+.ex .slide { font: 400 .8rem var(--mono); color: var(--muted); margin-right: 8px; font-weight: 400; }
+.ex .opts { margin: 0; padding-left: 1.4em; display: grid; gap: 2px; }
+summary { cursor: pointer; font-weight: 700; color: var(--ink); }
+details > div { margin-top: 8px; display: grid; gap: 6px; }
+details p { margin: 0; }
+.why { color: var(--muted); }
+
+.skipped { font-size: .9rem; color: var(--muted); max-width: 70ch; margin: 0; }
+</style>
+
+<main class="page">
+  <header>
+    <div class="course">EECS 280<small>Programming &amp; Intro to Data Structures</small></div>
+    <h1><span class="n">Lecture 10</span> – Polymorphism</h1>
+  </header>
+
+  <!-- THE BIG IDEA: 3–5 plain sentences, for understanding. Not part of the handwritten page. -->
+  <section class="idea" aria-label="The big idea">
+    <div class="tag">The big idea · read, don't copy</div>
+    <p>The whole lecture answers one question: when you call <code>ptr-&gt;talk()</code> through a <code>Bird*</code> that's actually pointing at a Chicken, whose <code>talk()</code> runs? By default C++ decides at compile time from the pointer's declared type, so you get Bird's version. If you mark the function <span class="term">virtual</span>, C++ waits until the program is running and uses the type of the object actually being pointed at, so you get Chicken's version.</p>
+    <p>That's what lets one <code>vector&lt;Bird*&gt;</code> hold Chickens, Ducks and Eagles and have each one talk correctly, which is exactly how Project 3's <code>vector&lt;Player*&gt;</code> works. The rest of the lecture follows from that: abstract classes, interfaces, factory functions, and when a derived class counts as a real subtype.</p>
+  </section>
+
+  <!-- THE SHEET: what to write down. One .sec per highlighted heading. Full sentences, like Oliver's notes. -->
+  <div class="sheet">
+
+    <section class="sec">
+      <h2>Polymorphism</h2>
+      <p class="def"><span class="term">Polymorphism</span> literally means "many forms". It's the ability for one piece of code to behave differently depending on how it's used.</p>
+      <ul class="arrows">
+        <li>There are 3 kinds: function overloading (<span class="term">ad-hoc</span>), templates (<span class="term">parametric</span>) and <span class="term">subtype polymorphism</span>.</li>
+        <li>When people say polymorphism they almost always mean subtype polymorphism: a variable of the base type (e.g. <code>Bird*</code>) can hold an object of a derived type (e.g. a <code>Chicken</code>).</li>
+      </ul>
+    </section>
+
+    <section class="sec">
+      <h2>Use pointers, not values</h2>
+      <p class="def">Because C++ has value semantics, <code>Bird b = c;</code> tries to cram a Chicken's worth of data into the space for a Bird. It compiles, but only the Bird part gets copied over. This is called <span class="term">slicing</span>, and <code>b</code> is now just a plain Bird, so it can never act like a Chicken.</p>
+      <ul class="arrows">
+        <li>The fix is to work with objects indirectly, using pointers or references. A <code>Bird*</code> and a <code>Chicken*</code> take up the same space because they're both just addresses.</li>
+      </ul>
+      <div class="code">
+        <div class="ln"><code>Chicken c("Myrtle");</code></div>
+        <div class="ln"><code>Bird b = c;</code><span class="note"><span class="no">✗</span> sliced, b is only a Bird now</span></div>
+        <div class="ln"><code>Bird *bPtr = &amp;c;</code><span class="note"><span class="ok">✓</span> bPtr still points at the whole Chicken</span></div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <h2>Static vs dynamic type</h2>
+      <p class="def">The <span class="term">static type</span> of a pointer or reference is the type it's declared with, and it's known at compile time. The <span class="term">dynamic type</span> is the type of the object it's actually pointing to while the program runs.</p>
+      <div class="code">
+        <div class="ln"><code>Chicken c("Myrtle");</code></div>
+        <div class="ln"><code>Duck d("Scrooge");</code></div>
+        <div class="ln"><code>Bird *ptr = &amp;c;</code><span class="note">← static type Bird*, dynamic type Chicken*</span></div>
+        <div class="ln"><code>ptr = &amp;d;</code><span class="note">← static type still Bird*, dynamic type now Duck*</span></div>
+      </div>
+      <ul class="arrows">
+        <li>The static type never changes, but the dynamic type changes whenever the pointer is pointed at something else.</li>
+        <li>The dynamic type must always be the same as, or derived from, the static type.</li>
+      </ul>
+    </section>
+
+    <section class="sec">
+      <h2>Upcast vs downcast</h2>
+      <p class="def">The compiler only lets you convert a pointer (or reference) automatically in one direction. Going up to the base type is an <span class="term">upcast</span> and is safe. Going down to a derived type is a <span class="term">downcast</span> and won't compile.</p>
+      <div class="code">
+        <div class="ln"><code>Chicken c("Myrtle");</code></div>
+        <div class="ln"><code>Chicken *cPtr = &amp;c;</code></div>
+        <div class="ln"><code>Bird *bPtr = cPtr;</code><span class="note"><span class="ok">✓</span> upcast, all Chickens are Birds</span></div>
+        <div class="ln"><code>Chicken *cPtr2 = bPtr;</code><span class="note"><span class="no">✗</span> downcast, not all Birds are Chickens</span></div>
+      </div>
+      <ul class="arrows">
+        <li>If you really need to downcast, use <code>dynamic_cast</code>. It gives back <code>nullptr</code> if the object isn't actually that type, so always check for null. It only works if the base class has at least one virtual function.</li>
+      </ul>
+      <div class="code">
+        <div class="ln"><code>Chicken *cp = dynamic_cast&lt;Chicken*&gt;(bPtr);</code></div>
+        <div class="ln"><code>if (cp != nullptr) { /* chicken-specific stuff */ }</code></div>
+      </div>
+      <ul class="arrows">
+        <li>Needing <code>dynamic_cast</code> is usually a sign of bad design: every time a new kind of Bird gets added, you'd need another <code>if</code>. Virtual functions solve this properly.</li>
+      </ul>
+    </section>
+
+    <section class="sec">
+      <h2>Virtual functions</h2>
+      <p class="def">Member functions are non-virtual by default. For a non-virtual function, the compiler picks which version to call at compile time, based on the static type. This is called <span class="term">static binding</span>. For a <span class="term">virtual</span> function, the choice waits until the call actually happens at runtime and uses the dynamic type instead. This is called <span class="term">dynamic binding</span>.</p>
+      <div class="tbl">
+        <table>
+          <thead><tr><th></th><th>non-virtual</th><th>virtual</th></tr></thead>
+          <tbody>
+            <tr><td>picked at</td><td>compile time</td><td>runtime</td></tr>
+            <tr><td>based on</td><td>static type</td><td>dynamic type</td></tr>
+            <tr><td>called</td><td><span class="term">static binding</span></td><td><span class="term">dynamic binding</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="code">
+        <div class="ln"><code>class Bird {</code></div>
+        <div class="ln"><code>public:</code></div>
+        <div class="ln"><code>  virtual void talk() const { cout &lt;&lt; "tweet"; }</code></div>
+        <div class="ln"><code>};</code></div>
+        <div class="ln"><code>class Duck : public Bird {</code></div>
+        <div class="ln"><code>public:</code></div>
+        <div class="ln"><code>  void talk() const override { cout &lt;&lt; "quack"; }</code><span class="note">← override</span></div>
+        <div class="ln"><code>};</code></div>
+        <div class="ln"><code>Duck d;</code></div>
+        <div class="ln"><code>Bird *ptr = &amp;d;</code></div>
+        <div class="ln"><code>ptr-&gt;talk();</code><span class="note">← prints quack. Without virtual it would print tweet</span></div>
+      </div>
+      <ul class="arrows">
+        <li>You only need to write <code>virtual</code> in the base class. The derived version is automatically virtual too.</li>
+        <li><code>override</code> tells the compiler to check that this function really matches a virtual function in the base class, including <code>const</code>. Without it, a typo like <code>tak()</code> silently creates a brand new function instead of giving an error.</li>
+        <li>This is what makes a <code>vector&lt;Bird*&gt;</code> useful: looping through it and calling <code>talk()</code> on each one prints bawwk, quack, screech e.t.c.</li>
+      </ul>
+    </section>
+
+    <section class="sec">
+      <h2>Abstract classes &amp; interfaces</h2>
+      <p class="def">Sometimes the base class has no sensible version of a function. What does a plain "bird" say? In that case we make it <span class="term">pure virtual</span> with <code>= 0</code>, which means there is no implementation at the base level.</p>
+      <div class="code">
+        <div class="ln"><code>virtual void talk() const = 0;</code><span class="note">← pure virtual</span></div>
+      </div>
+      <ul class="arrows">
+        <li>A class with any pure virtual function is an <span class="term">abstract class</span>, and you can't create objects of it, e.g. <code>Bird b;</code> is an error.</li>
+        <li>Derived classes inherit the pure virtual functions and stay abstract until they override all of them.</li>
+        <li>You can still have pointers to an abstract class, and they're really useful, e.g. <code>Animal *ptr = &amp;cow;</code> is fine.</li>
+        <li>An <span class="term">interface</span> is a class where every function is pure virtual, e.g. <code>Shape</code> with <code>area()</code> and <code>perimeter()</code>. Classes like Triangle and Rectangle "implement" the Shape interface.</li>
+      </ul>
+      <div class="tbl">
+        <table>
+          <tbody>
+            <tr><td>non-virtual</td><td>"You can't override this." (Redefining it in a derived class just hides it; there's no runtime choice.)</td></tr>
+            <tr><td>virtual</td><td>"Here's a default. Override it if you want."</td></tr>
+            <tr><td>pure virtual</td><td>"You must override this to fill in the missing function."</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="sec">
+      <h2>Liskov substitution</h2>
+      <p class="def">Not every derived type is a subtype. A <span class="term">derived type</span> is anything that inherits members. A <span class="term">subtype</span> also has to follow the "is-a" relationship.</p>
+      <ul class="arrows">
+        <li><span class="term">Liskov Substitution Principle</span>: if S is a subtype of T, any code that works with a T should still work if you swap in an S, with no unwanted effects.</li>
+        <li>So a subtype can require less (a weaker REQUIRES) and promise more (a stronger EFFECTS), but never require more or promise less.</li>
+        <li>e.g. if the base function REQUIRES x &gt; 0, a version that works for any x is fine <span class="ok">✓</span>, but one that needs x &gt; 10 breaks code that passes in 5 <span class="no">✗</span>.</li>
+      </ul>
+    </section>
+
+    <!-- MISC DETAILS: small facts that don't need a section. Sits in the left margin on wide screens. -->
+    <aside class="misc">
+      <h2>Misc details</h2>
+      <ol>
+        <li><span class="term">Overriding</span> is when a derived class redefines an inherited virtual function. <span class="term">Overloading</span> is when one function name refers to different functions with different parameter types.</li>
+        <li>Member name lookup starts in the class of the static type (for a pointer, the type it's declared as), then tries the base class, and stops at the first match.</li>
+        <li>A <span class="term">factory function</span> creates and returns objects, e.g. <code>Bird_factory("blue", "Myrtle")</code> returns a <code>new BlueBird</code>. It lets the program decide which type to make while it's running (e.g. from user input), without the caller needing to know the class name.</li>
+      </ol>
+    </aside>
+  </div>
+
+  <!-- CHECK YOURSELF: one .ex per in-class exercise. Include enough of the slide (code, options,
+       promises) to attempt it without the slides; only the answer goes inside <details>. -->
+  <section class="check" aria-label="Check yourself">
+    <div class="check-head">
+      <h2>Check yourself</h2>
+      <button type="button" id="reveal">Show all answers</button>
+      <p>The in-class exercises. Try each one before opening the answer.</p>
+    </div>
+
+    <article class="ex">
+      <p class="q"><span class="slide">slide 7</span>Given <code>Bird b; Chicken c; Duck d;</code>, which of these are safe?</p>
+      <div class="code">
+        <div class="ln"><code>(a) Bird *bPtr = &amp;b;  Chicken *cPtr = bPtr;</code></div>
+        <div class="ln"><code>(b) Bird *bPtr = &amp;b;  bPtr = &amp;d;  bPtr = &amp;c;</code></div>
+        <div class="ln"><code>(c) Bird &amp;bRef = c;   Chicken &amp;cRef = bRef;</code></div>
+        <div class="ln"><code>(d) Bird &amp;bRef = d;</code></div>
+      </div>
+      <details><summary>Answer</summary><div>
+        <p>(a) <span class="no">✗</span> (b) <span class="ok">✓</span> (c) <span class="no">✗</span> (d) <span class="ok">✓</span></p>
+        <p class="why">(a) and (c) convert a Bird into a Chicken, which is a downcast. (b) and (d) only ever convert into a Bird, which is an upcast.</p>
+      </div></details>
+    </article>
+
+    <article class="ex">
+      <p class="q"><span class="slide">slide 8</span>What are the static and dynamic types of <code>ptr</code> at (1) and (2)? Say <code>random()</code> returns 0.3.</p>
+      <div class="code">
+        <div class="ln"><code>Chicken c("Myrtle");  Duck d("Scrooge");</code></div>
+        <div class="ln"><code>Bird *ptr;</code><span class="note">(1)</span></div>
+        <div class="ln"><code>if (random() &lt; 0.5) ptr = &amp;c;</code></div>
+        <div class="ln"><code>else ptr = &amp;d;</code><span class="note">(2) after the if/else</span></div>
+      </div>
+      <details><summary>Answer</summary><div>
+        <p>Static type: <code>Bird*</code> at both. Dynamic type: undefined at (1), <code>Chicken*</code> at (2).</p>
+        <p class="why">At (1) ptr isn't pointing at anything yet. 0.3 &lt; 0.5, so it gets pointed at the Chicken.</p>
+      </div></details>
+    </article>
+
+    <article class="ex">
+      <p class="q"><span class="slide">slide 9</span><code>talk()</code> is <b>not</b> virtual yet. A <code>vector&lt;Bird*&gt;</code> holds a Chicken, Duck, Eagle and Duck, and <code>allTalk</code> calls <code>birds[i]-&gt;talk()</code> on each. What prints?</p>
+      <ol class="opts" type="A">
+        <li>bawwk, quack, screech, quack</li>
+        <li>tweet, tweet, tweet, tweet</li>
+        <li>bawwk, bawwk, bawwk, bawwk</li>
+        <li>Undefined, the code might crash</li>
+      </ol>
+      <details><summary>Answer</summary><div>
+        <p><b>B</b>: tweet, tweet, tweet, tweet.</p>
+        <p class="why">Without virtual, the static type <code>Bird*</code> decides, so Bird's <code>talk()</code> runs every time. Once <code>talk()</code> is virtual, the answer becomes A.</p>
+      </div></details>
+    </article>
+
+    <article class="ex">
+      <p class="q"><span class="slide">slide 21</span>What does each call print?</p>
+      <div class="code">
+        <div class="ln"><code>class Fruit  { public: int f1() { return 1; }  virtual int f2() { return 2; } };</code></div>
+        <div class="ln"><code>class Citrus : public Fruit  { public: int f1() { return 3; }  int f2() override { return 4; } };</code></div>
+        <div class="ln"><code>class Lemon  : public Citrus { public: int f1() { return 5; }  int f2() override { return 6; } };</code></div>
+        <div class="ln"><code> </code></div>
+        <div class="ln"><code>Fruit fruit;  Citrus citrus;  Lemon lemon;</code></div>
+        <div class="ln"><code>Fruit *fPtr = &amp;lemon;  Citrus *cPtr = &amp;citrus;</code></div>
+        <div class="ln"><code>fruit.f2();  citrus.f1();  fPtr-&gt;f1();  fPtr-&gt;f2();  cPtr-&gt;f2();</code></div>
+        <div class="ln"><code>cPtr = &amp;lemon;  cPtr-&gt;f1();  cPtr-&gt;f2();</code></div>
+      </div>
+      <details><summary>Answer</summary><div>
+        <p><code>2 3 1 6 4 3 6</code></p>
+        <p class="why">Calls on plain objects just use that object's class. Through a pointer, <code>f1</code> is non-virtual, so it follows the pointer's type (Fruit → 1, Citrus → 3). <code>f2</code> is virtual, so it follows the object's type (Lemon → 6, Citrus → 4).</p>
+      </div></details>
+    </article>
+
+    <article class="ex">
+      <p class="q"><span class="slide">slide 26</span><code>Animal</code> has a pure virtual <code>talk()</code>. <code>Cow</code> and <code>Bird</code> derive from Animal, and only Cow overrides <code>talk()</code>. <code>Duck</code> derives from Bird and overrides it. Which of <code>Animal a; Bird b; Cow c; Duck d;</code> compile, and what can <code>Animal *ptr</code> point to?</p>
+      <details><summary>Answer</summary><div>
+        <p><span class="no">✗</span> <code>Animal a</code>, <span class="no">✗</span> <code>Bird b</code>, <span class="ok">✓</span> <code>Cow c</code>, <span class="ok">✓</span> <code>Duck d</code>. <code>ptr</code> can point to <code>c</code> or <code>d</code>.</p>
+        <p class="why">Animal and Bird are both abstract, since Bird never overrides <code>talk()</code>. You can't make objects of them, but you can point an <code>Animal*</code> at any concrete animal.</p>
+      </div></details>
+    </article>
+
+    <article class="ex">
+      <p class="q"><span class="slide">slide 35</span>Base <code>Player::play_card()</code> promises to return a card from the player's hand, following the rules of euchre. <code>DerivedPlayer</code> always returns the ace of clubs. Is it a subtype?</p>
+      <details><summary>Answer</summary><div>
+        <p><span class="no">✗</span> No.</p>
+        <p class="why">It promises less: the ace of clubs might not be in the player's hand or might not be a legal play.</p>
+      </div></details>
+    </article>
+
+    <article class="ex">
+      <p class="q"><span class="slide">slide 36</span>Base <code>PPMReader</code> REQUIRES that pixels are separated by a single space. <code>DerivedPPMReader</code> accepts any kind of whitespace. Is it a subtype?</p>
+      <details><summary>Answer</summary><div>
+        <p><span class="ok">✓</span> Yes.</p>
+        <p class="why">It requires less. Every input the base accepts, the derived one accepts too.</p>
+      </div></details>
+    </article>
+
+    <article class="ex">
+      <p class="q"><span class="slide">slide 37</span>Base <code>Unicorn::fire_laser_beam()</code> promises a power of at least 100kW. <code>DerivedUnicorn</code> promises over 9000kW. Is it a subtype?</p>
+      <details><summary>Answer</summary><div>
+        <p><span class="ok">✓</span> Yes.</p>
+        <p class="why">It promises more. Over 9000kW still satisfies "at least 100kW".</p>
+      </div></details>
+    </article>
+  </section>
+
+  <p class="skipped"><b>Skipped:</b> slide 1 (title), slide 11 (repeat of slide 10), slides 17–20 (joke &amp; break), slide 32 (just the question "what does new do?"). Slides 14 and 16 were folded into Upcast vs downcast and Virtual functions.</p>
+</main>
+
+<script>
+// Color C++ keywords and type names in code rows, the way types are written in purple in the notes.
+(() => {
+  const words = /\b(int|double|bool|char|void|auto|const|virtual|override|class|struct|public|private|return|new|delete|nullptr|dynamic_cast|static_cast|string|vector|if|else|Bird|Chicken|Duck|Eagle|Animal|Cow|Player|Shape|Fruit|Citrus|Lemon)\b/g;
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  document.querySelectorAll(".ln code").forEach(el => {
+    const src = el.textContent;
+    const i = src.indexOf("//");
+    const code = i >= 0 ? src.slice(0, i) : src;
+    const comment = i >= 0 ? src.slice(i) : "";
+    el.innerHTML = esc(code).replace(words, '<span class="kw">$1</span>') + (comment ? `<span class="cm">${esc(comment)}</span>` : "");
+  });
+  const btn = document.getElementById("reveal");
+  btn.addEventListener("click", () => {
+    const all = [...document.querySelectorAll(".check details")];
+    const open = !all.every(d => d.open);
+    all.forEach(d => d.open = open);
+    btn.textContent = open ? "Hide all answers" : "Show all answers";
+  });
+})();
+</script>
