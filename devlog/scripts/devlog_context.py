@@ -23,7 +23,7 @@ HEADING = re.compile(r"^## (\d{4}-\d{2}(?:-\d{2})?)(?: \(summary\))? · ([0-9a-f
 def git(root, *args):
     r = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True,
                        encoding="utf-8", errors="replace")
-    return r.stdout.strip() if r.returncode == 0 else ""
+    return r.stdout.rstrip() if r.returncode == 0 else ""  # rstrip: status lines start with a space
 
 
 def commit_exists(root, ref):
@@ -80,12 +80,17 @@ def main():
         newest_day = git(root, "log", "-1", "--format=%ad", "--date=short")
         first_of_day = git(root, "log", f"--since={newest_day} 00:00", "--reverse", "--format=%h").splitlines()
         base = git(root, "rev-parse", "--short", f"{first_of_day[0]}^") if first_of_day else ""
-        rng = f"{base}..HEAD" if base else "HEAD"
+        if base:
+            rng = f"{base}..HEAD"
+        else:
+            # The day starts at the repo's very first commit, which has no parent: log from it.
+            root_commit = git(root, "rev-list", "--max-parents=0", "--abbrev-commit", "HEAD").splitlines()[0]
+            rng = f"{root_commit}^!" if root_commit == git(root, "rev-parse", "--short", "HEAD") else f"{root_commit}..HEAD"
         print(f"No previous entry: covering the most recent day of work ({newest_day}).")
 
     head = git(root, "rev-parse", "--short", "HEAD")
-    start = rng.split("..")[0] if ".." in rng else ""
-    print(f"Range for the new entry: {start}..{head}" if start else f"Range: up to {head}")
+    start = rng.split("..")[0] if ".." in rng else rng.removesuffix("^!")
+    print(f"Range for the new entry: {start}..{head}")
 
     commits = git(root, "log", "--reverse", "--format=%h %ad %s", "--date=short", rng).splitlines()
     real = [c for c in commits if not NOISE.match(subject(c))]
